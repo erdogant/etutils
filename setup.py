@@ -3,7 +3,7 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
-     install_requires=['numpy','pandas','tqdm','matplotlib','path'],
+     install_requires=['numpy','pandas','tqdm','matplotlib','path','sklearn'],
      python_requires='>=3',
      name='etutils',  
      version='0.1.0',
