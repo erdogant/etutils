@@ -173,11 +173,17 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
+
+#%% Load libraries
+def loadlibs():
+    # To avoid loading/installing many heavy packages, load when required.
+    import seaborn as sns
 
 #%%
 def scatter(xcoord, ycoord, labx=[], labx_txt=[], labx_type='all', colors=[], size=25, edgecolors=['#000000'], alpha=0.6, density=0, density_levels=30, density_type='match', density_labx=[], xlabel="x-axis", ylabel="y-axis", title="Title", xlim=[], ylim=[], width=10, height=10, grid=True, cmap='Set1', newfig=1, ax=[], savepath="", plottype='default'):
 	#%% DECLARATIONS
+    loadlibs()
+    
     fig =[]
     # Make dictionary to store Parameters
     Param = {}

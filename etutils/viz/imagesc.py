@@ -122,11 +122,16 @@
 #%% Libraries
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
+
+#%% Load libraries
+def loadlibs():
+    # To avoid loading/installing many heavy packages, load when required.
+    import seaborn as sns
 
 #%%
 def imagesc(data, labxcol='', labxrow='', cluster=False, norm=0, z_score=None, standard_scale=None, cmap='coolwarm', dpi=100, labxTop=1, xtickRot=90, ytickRot=0, width=10, height=10, savepath='', colorbar=1, distance='euclidean', linkage='ward', linewidth=0.1, caxis=[None,None], annot=False, linecolor='000000', plottype='default'):
 	#%% DECLARATIONS
+    loadlibs()
     out ={};
     fig ='';
     # Make dictionary to store Parameters

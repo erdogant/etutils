@@ -1,6 +1,7 @@
 """ This function extracts the content of a zipfile into a tmp directory
-
-	A= zip.extract(path_of_file, <optional>)
+    import etutils.zipfun as zipfun
+	A= zipfun.extract(path_of_file, <optional>)
+	A= zipfun.zzip(dir_or_file, <optional>)
 
  INPUT:
    path_of_file:  String, e.g., 
@@ -19,23 +20,21 @@
    Extracts the content of a zipfile into a tmp directory
 
  EXAMPLE
+   import etutils.zipfun as zipfun
+   A = zipfun.extract('./mydir/files.zip')
 
-   A = extract_files('./mydir/files.zip')
-
- SEE ALSO
-   NAME OF FUNCTIONS THAT ARE CLOSELY ASSOCIATED WITH IT
 """
 
 #--------------------------------------------------------------------------
 # Name        : zip.py
 # Author      : E.Taskesen
 # Contact     : erdogant@gmail.com
-# Date        : Aug. 2018
+# Date        : Dec. 2019
 #--------------------------------------------------------------------------
 
 import os
 import zipfile
-import RWSlearn.GENERAL.path as path
+import etutils.path as path
 import tempfile
 
 #%%
@@ -47,7 +46,7 @@ def zzip(filepath, storepath=None, verbose=3):
         # Store at location
         file_paths=[filepath]
     else:
-        print('[ZIP] Filepath is not valid.')
+        print('[ZIPFUN] Filepath is not valid.')
         return None
 
     if storepath==None:
@@ -110,9 +109,9 @@ def extract(path_of_file, tmpdir='input', verbose=3):
     # Make tempdirectory
     if not os.path.isdir(pathname):
         os.mkdir(pathname)
-        if verbose>=3: print('[EXTRACT FILES] Directory is created: %s' %pathname)
+        if verbose>=3: print('[ZIPFUN.extract] Directory is created: %s' %pathname)
     else:
-        if verbose>=3: print('[EXTRACT FILES] Directory already exists and will be used: %s' %pathname)
+        if verbose>=3: print('[ZIPFUN.extract] Directory already exists and will be used: %s' %pathname)
     
     # Extracting files
     if verbose>=3: print('[EXTRACT FILES] Extracting %s..' %(filenameRAW))
@@ -127,5 +126,5 @@ def extract(path_of_file, tmpdir='input', verbose=3):
     out['path']=path_of_file
     out['extracted_files']=path.dirwalk(pathname)
     
-    if verbose>=3: print('[EXTRACT FILES] Done!')
+    if verbose>=3: print('[ZIPFUN.extract] Done!')
     return(out)
