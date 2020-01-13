@@ -1,6 +1,5 @@
 from etutils.asciiart import asciiart
 from etutils.ismember import ismember
-from etutils.zip_extract import zip_extract
 from etutils.time_extract import time_extract
 from etutils.time_diff import time_diff
 from etutils.strdiff import strdiff
@@ -22,6 +21,7 @@ import etutils.picklefast
 import etutils.path
 import etutils.strfun
 import etutils.filefun
+import etutils.zipfun
 
 # Import functions that are build on functions above
 from etutils.mmap_readfile import mmap_readfile
