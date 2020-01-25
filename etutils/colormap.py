@@ -49,3 +49,30 @@ def colormap(N, cmap='Set1', method='matplotlib'):
         base = plt.cm.get_cmap(cmap)
         color_list = base(np.linspace(0, 1, N))[:,0:3]
     return color_list
+
+# %%
+def fromlist(y, cmap='Set1'):
+    '''
+    
+
+    Parameters
+    ----------
+    y : list of strings or integers
+        For each unique value, a unique color is given back.
+    cmap : String, optional
+        Colormap. The default is 'Set1'.
+
+    Returns
+    -------
+    List of colors in the same order as y.
+
+    '''
+    # make unique
+    uiy=np.unique(y)
+    # Get colors
+    getcolors=colormap(len(uiy), cmap=cmap)
+    # Make dict for each search
+    colordict=dict(zip(uiy.astype(int), getcolors.tolist()))
+    # Get colors for y
+    out=list(map(colordict.get, y))
+    return(out)
