@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/etutils)](https://img.shields.io/pypi/pyversions/etutils)
 [![PyPI Version](https://img.shields.io/pypi/v/etutils)](https://pypi.org/project/etutils/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/erdogant/etutils/blob/master/LICENSE)
-[![Donate Bitcoin](https://img.shields.io/badge/donate-$10-orange.svg)](https://https://erdogant.github.io/donate/?amount=10&currency=USD)
+[![Donate Bitcoin](https://img.shields.io/badge/donate-$10-orange.svg)](https://erdogant.github.io/donate/?amount=10&currency=USD)
 
 * etutils is Python package with helper functions that are used across various other packages. Installing this package on itself may not be so interesting.
 
