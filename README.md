@@ -4,6 +4,7 @@
 [![PyPI Version](https://img.shields.io/pypi/v/etutils)](https://pypi.org/project/etutils/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/erdogant/etutils/blob/master/LICENSE)
 [![Donate](https://img.shields.io/badge/donate-grey.svg)](https://erdogant.github.io/donate/?currency=USD&amount=5)
+[![Downloads](https://pepy.tech/badge/etutils/week)](https://pepy.tech/project/etutils/week)
 
 *  etutils is Python package with helper functions that are used across various other packages. Installing this package on itself may not be so interesting.
 
