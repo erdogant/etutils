@@ -47,5 +47,6 @@ import etutils as etutils
 See [LICENSE](LICENSE) for details.
 
 ## Donate
-https://github.com/erdogant/erdogant.github.io/tree/master/donate/donate_line.html
+
+<iframe src="https://github.com/erdogant/erdogant.github.io/tree/master/donate/donate_line.html"></iframe>
 
