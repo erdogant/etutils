@@ -43,5 +43,9 @@ import etutils as etutils
 ## Contribute
 * Contributions are welcome.
 
-## © Copyright
+## Copyright
 See [LICENSE](LICENSE) for details.
+
+## Donate
+https://github.com/erdogant/erdogant.github.io/tree/master/donate/donate_line.html
+
