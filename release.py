@@ -27,26 +27,50 @@ def github_version(githubname, packagename, verbose=3):
     Returns
     -------
     github_version : String
-        Version number of the latest github package.
+        x.x.x. : Version number of the latest github package.
+        0.0.0  : When repo has no tag/release yet.
+        9.9.9  : When repo is private or package/user does not exists.
 
     """
     # Pull latest from github
     print('[release] git pull')
     os.system('git pull')
-    # Get latest version of github release
+    
+    github_version = '9.9.9'
+
+    # Check whether username/repo exists and not private
     try:
-        github_url = 'https://api.github.com/repos/' + githubname + '/' + packagename + '/releases/latest'
-        if verbose>=4: print('[release] Github url: %s' %(github_url))
-        github_page = urllib.request.urlopen(github_url)
-        github_data = github_page.read()
-        github_version = yaml.load(github_data)['tag_name']
-
-        if verbose>=3: print('[release] Github version: %s' %(github_version))
-        if verbose>=3: print('[release] Github version requested from: %s' %(github_url))
+        github_page = None
+        github_url = 'https://api.github.com/repos/' + githubname + '/' + packagename + '/releases'
+        github_page = str(urllib.request.urlopen(github_url).read())
+        tag_name = re.search('"tag_name"', github_page)
     except:
-        if verbose>=1: print('[release] ERROR: Can not find the latest github version!\nPrivate repo? or doest not exists? or there is no release yet?: [https://github.com//%s/%s]' %(githubname, packagename))
-        github_version = '9.9.9'
+        if verbose>=1: print('[release] ERROR: github %s does not exists or is private.' %(github_url))
+        return github_version
 
+    # Continue and check whether this is the very first tag/release or a multitude are readily there.
+    if tag_name is None:
+        if verbose>=4: print('[release.debug] github exists but tags and releases are empty [%s]' %(github_url))
+        # Tag with 0.0.0 to indicate that this is a very first tag
+        github_version = '0.0.0'
+    else:
+        # exists
+        try:
+            # Get the latest release
+            github_url = 'https://api.github.com/repos/' + githubname + '/' + packagename + '/releases/latest'
+            github_page = str(urllib.request.urlopen(github_url).read())
+            tag_name = re.search('"tag_name"', github_page)
+            # Find the next tag by the seperation of the comma. Do +20 or so to make sure a very very long version would also be included.
+            # github_version = yaml.load(github_page)['tag_name']
+            tag_ver = github_page[tag_name.end() + 1:(tag_name.end() + 20)]
+            get_next_comma = re.search(',',tag_ver)
+            github_version = tag_ver[:get_next_comma.start()].replace('"','')
+        except:
+            if verbose>=1: print('[release] ERROR: Can not find the latest github version!\nPrivate repo? or doest not exists? or there is no release yet?: [https://github.com//%s/%s]' %(githubname, packagename))
+            github_version = '9.9.9'
+
+    if verbose>=4: print('[release] Github version: %s' %(github_version))
+    if verbose>=4: print('[release] Github version requested from: %s' %(github_url))
     return github_version
 
 
@@ -74,15 +98,13 @@ def _github_set_tag_and_push(current_version, verbose=3):
     os.system('git tag -a v' + current_version + ' -m "v' + current_version + '"')
     # os.system('git tag -a ' + current_version + ' -m "' + current_version + '"')
     os.system('git push origin --tags')
-    if verbose>=2: print('[release] WARNING: WHAT NEEDS TO BE DONE: Go to your github most recent releases (this one) and [edit tag] > the set the version nubmer in the [Release title].')
 
 
-def _make_clean(packagename, clean=True, verbose=3):
-    if clean:
-        if verbose>=3: print('[release] Removing local build directories..')
-        if os.path.isdir('dist'): shutil.rmtree('dist')
-        if os.path.isdir('build'): shutil.rmtree('build')
-        if os.path.isdir(packagename + '.egg-info'): shutil.rmtree(packagename + '.egg-info')
+def _make_clean(packagename, verbose=3):
+    if verbose>=3: print('[release] Removing local build directories..')
+    if os.path.isdir('dist'): shutil.rmtree('dist')
+    if os.path.isdir('build'): shutil.rmtree('build')
+    if os.path.isdir(packagename + '.egg-info'): shutil.rmtree(packagename + '.egg-info')
 
 
 def _package_name(packagename, verbose=3):
@@ -142,27 +164,39 @@ def main(githubname, packagename, makeclean, verbose):
     initfile = os.path.join(packagename, "__init__.py")
 
     if verbose>=3:
-        print('[release] Package: %s' %packagename)
-        print('[release] init file: %s' %initfile)
+        print('[release] Package   : %s' %packagename)
+        print('[release] init file : %s' %initfile)
 
     # Find version now
     if os.path.isfile(initfile):
-        if verbose>=3: input("[release] Press Enter to get version from init file and github..")
         # Extract version from __init__.py
         getversion = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", open(initfile, "rt").read(), re.M)
         if getversion:
+            # Remove build directories
+            if verbose>=3 and makeclean: 
+                input("[release] Press Enter to clean previous local builds from the package directory..")
+                _make_clean(packagename, verbose=verbose)
             # Version found, lets move on:
             current_version = getversion.group(1)
-            # Remove build directories
-            _make_clean(packagename, clean=makeclean, verbose=verbose)
-            if verbose>=3: print('[release] Current local version from __init__.py: %s' %(current_version))
             # Get latest version of github release
             githubversion = github_version(githubname, packagename, verbose=verbose)
+            if verbose>=3: print('[release] Current local version from __init__.py: %s and from github: %s' %(current_version, githubversion))
 
             # Continue with the process of building a new version if the current version is newer then the one on github.
-            VERSION_OK = version.parse(current_version)>version.parse(githubversion)
+            if githubversion=='0.0.0':
+                if verbose>=3: print("[release] Very first release for [%s]" %(packagename))
+                VERSION_OK = True
+            elif githubversion=='9.9.9':
+                if verbose>=3: print("[release] %s/%s not available for [%s]" %(githubname, packagename))
+                VERSION_OK = False
+            elif version.parse(current_version)>version.parse(githubversion):
+                VERSION_OK = True
+            else:
+                VERSION_OK = False
+
+            # Continue is version is TRUE
             if VERSION_OK:
-                if verbose>=3: input("Press Enter to make build and tag on github...")
+                if verbose>=3: input("Press Enter to make build and release [%s] on github..." %(current_version))
                 # Make build and install
                 _make_build_and_install(packagename, current_version)
                 # Set tag to github and push
@@ -171,9 +205,11 @@ def main(githubname, packagename, makeclean, verbose):
                 if verbose>=3: input("Press Enter to upload to pypi...")
                 print('Upload to pypi..')
                 os.system(TWINE_PATH)
+                if verbose>=2: print('[release] ALL RIGHT! Everything is succesfully done!\nBut you still need to do one more thing.\nGo to your github most recent releases (this one) and [edit tag] > the set the version nubmer in the [Release title].')
+
             else:
                 if githubversion != '9.9.9':
-                    print('[release] WARNING: Not released! You need to increase your version: [%s]' %(initfile))
+                    print('[release] WARNING: Not released! You need to increase your version or make an active repo: [%s]' %(initfile))
 
         else:
             print("[release] ERROR: Unable to find version string in %s. Make sure that the operators are space seperated eg.: __version__ = '0.1.0'" % (initfile,))
