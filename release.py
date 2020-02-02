@@ -1,15 +1,15 @@
 """Make new release on github and pypi."""
 
-import argparse
 import os
 import re
+import platform
+import argparse
 import numpy as np
 import urllib.request
-import yaml
 import shutil
 from packaging import version
-yaml.warnings({'YAMLLoadWarning': False})
-TWINE_PATH = 'C://Users/Erdogan/AppData/Roaming/Python/Python36/Scripts/twine.exe upload dist/*'
+# import yaml
+# yaml.warnings({'YAMLLoadWarning': False})
 
 
 def github_version(githubname, packagename, verbose=3):
@@ -35,7 +35,6 @@ def github_version(githubname, packagename, verbose=3):
     # Pull latest from github
     print('[release] git pull')
     os.system('git pull')
-    
     github_version = '9.9.9'
 
     # Check whether username/repo exists and not private
@@ -125,7 +124,7 @@ def _package_name(packagename, verbose=3):
 
 
 # %% def main(githubname, packagename=None, verbose=3):
-def main(githubname, packagename, makeclean, verbose):
+def main(githubname, packagename, makeclean=False, twine=None, verbose=3):
     """Make new release on github and pypi.
 
     Description
@@ -149,6 +148,8 @@ def main(githubname, packagename, makeclean, verbose):
         Name of the package.
     makeclean : bool
         Clean local distribution files for packaging.
+    twine : str
+        Filepath to the executable of twine.
     verbose : int
         Print message. The default is 3.
 
@@ -156,7 +157,14 @@ def main(githubname, packagename, makeclean, verbose):
     -------
     None.
 
+
+    References
+    ----------
+    * https://dzone.com/articles/executable-package-pip-install
+    * https://blog.ionelmc.ro/presentations/packaging/#slide:8
+
     """
+
     # Get package name
     packagename = _package_name(packagename, verbose=verbose)
     assert packagename is not None, print('[release] ERROR: Package directory does not exists.')
@@ -164,16 +172,20 @@ def main(githubname, packagename, makeclean, verbose):
     initfile = os.path.join(packagename, "__init__.py")
 
     if verbose>=3:
+        os.system('cls')
+        print('[release] github    : %s' %githubname)
         print('[release] Package   : %s' %packagename)
+        print('[release] Cleaning  : %s' %makeclean)
+        print('[release] Verbosity : %s' %verbose)
         print('[release] init file : %s' %initfile)
 
-    # Find version now
+    # Find version
     if os.path.isfile(initfile):
         # Extract version from __init__.py
         getversion = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", open(initfile, "rt").read(), re.M)
         if getversion:
             # Remove build directories
-            if verbose>=3 and makeclean: 
+            if verbose>=3 and makeclean:
                 input("[release] Press Enter to clean previous local builds from the package directory..")
                 _make_clean(packagename, verbose=verbose)
             # Version found, lets move on:
@@ -202,9 +214,10 @@ def main(githubname, packagename, makeclean, verbose):
                 # Set tag to github and push
                 _github_set_tag_and_push(current_version, verbose=verbose)
                 # Upload to pypi
-                if verbose>=3: input("Press Enter to upload to pypi...")
-                print('Upload to pypi..')
-                os.system(TWINE_PATH)
+                if os.path.isfile(twine):
+                    if verbose>=3: input("Press Enter to upload to pypi...")
+                    os.system(twine + ' upload dist/*')
+
                 if verbose>=2: print('[release] ALL RIGHT! Everything is succesfully done!\nBut you still need to do one more thing.\nGo to your github most recent releases (this one) and [edit tag] > the set the version nubmer in the [Release title].')
 
             else:
@@ -223,8 +236,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("github", type=str, help="github account name")
     parser.add_argument("-p", "--package", type=str, help="Package name your want to release.")
-    parser.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2, 3, 4, 5], help="Output verbosity, higher number tends to more information.")
     parser.add_argument("-c", "--clean", type=int, choices=[0, 1], help="Remove local builds: [dist], [build] and [x.egg-info] before creating new ones.")
+    parser.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2, 3, 4, 5], help="Output verbosity, higher number tends to more information.")
+    parser.add_argument("-t", "--twine", type=str, help="Path to twine that is used to upload to pypi.")
     args = parser.parse_args()
 
     # Default verbosity value is 0
@@ -234,13 +248,10 @@ if __name__ == '__main__':
         args.clean=True
     else:
         args.clean=False
+    if args.twine is None:
+        args.twine = ''
+        if platform.system().lower()=='windows':
+            args.twine = os.environ['TWIN.EXE']
+            # TWINE_PATH = 'C://Users/<USER>/AppData/Roaming/Python/Python36/Scripts/twine.exe'
 
-    # Clean screen
-    if args.verbosity>=3:
-        os.system('cls')
-        print('[release] github    : %s' %args.github)
-        print('[release] Cleaning  : %s' %args.clean)
-        print('[release] Package   : %s' %args.package)
-        print('[release] Verbosity : %s' %args.verbosity)
-
-    main(args.github, args.package, args.clean, args.verbosity)
+    main(args.github, args.package, makeclean=args.clean, twine=args.twine, verbose=args.verbosity)
