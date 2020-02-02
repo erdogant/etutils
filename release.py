@@ -10,14 +10,15 @@ import shutil
 from packaging import version
 # import yaml
 # yaml.warnings({'YAMLLoadWarning': False})
+EXCLUDE_DIR = np.array(['depricated','__pycache__','_version','.git','.gitignore','build','dist','doc','docs'])  # noqa
 
 
-def github_version(githubname, packagename, verbose=3):
+def github_version(username, packagename, verbose=3):
     """Get latest github version for package.
 
     Parameters
     ----------
-    githubname : String
+    username : String
         Name of the github account.
     packagename : String
         Name of the package.
@@ -40,7 +41,7 @@ def github_version(githubname, packagename, verbose=3):
     # Check whether username/repo exists and not private
     try:
         github_page = None
-        github_url = 'https://api.github.com/repos/' + githubname + '/' + packagename + '/releases'
+        github_url = 'https://api.github.com/repos/' + username + '/' + packagename + '/releases'
         github_page = str(urllib.request.urlopen(github_url).read())
         tag_name = re.search('"tag_name"', github_page)
     except:
@@ -56,16 +57,16 @@ def github_version(githubname, packagename, verbose=3):
         # exists
         try:
             # Get the latest release
-            github_url = 'https://api.github.com/repos/' + githubname + '/' + packagename + '/releases/latest'
+            github_url = 'https://api.github.com/repos/' + username + '/' + packagename + '/releases/latest'
             github_page = str(urllib.request.urlopen(github_url).read())
             tag_name = re.search('"tag_name"', github_page)
             # Find the next tag by the seperation of the comma. Do +20 or so to make sure a very very long version would also be included.
             # github_version = yaml.load(github_page)['tag_name']
             tag_ver = github_page[tag_name.end() + 1:(tag_name.end() + 20)]
-            get_next_comma = re.search(',',tag_ver)
-            github_version = tag_ver[:get_next_comma.start()].replace('"','')
+            next_char = re.search(',',tag_ver)
+            github_version = tag_ver[:next_char.start()].replace('"','')
         except:
-            if verbose>=1: print('[release] ERROR: Can not find the latest github version!\nPrivate repo? or doest not exists? or there is no release yet?: [https://github.com//%s/%s]' %(githubname, packagename))
+            if verbose>=1: print('[release] ERROR: Can not find the latest github version!\nPrivate repo? or doest not exists? or there is no release yet?: [https://github.com//%s/%s]' %(username, packagename))
             github_version = '9.9.9'
 
     if verbose>=4: print('[release] Github version: %s' %(github_version))
@@ -114,8 +115,7 @@ def _package_name(packagename, verbose=3):
         filesindir = np.array(os.listdir())
         getdirs = filesindir[list(map(lambda x: os.path.isdir(x), filesindir))]
         # Remove all the known not relevant files and dirs
-        exclude = np.array(['depricated','__pycache__','_version','.git','.gitignore','build','dist','docs'])  # noqa
-        Iloc = np.isin(np.array(list(map(str.lower, getdirs))), exclude)==False  # noqa
+        Iloc = np.isin(np.array(list(map(str.lower, getdirs))), EXCLUDE_DIR)==False  # noqa
         if np.any(Iloc):
             packagename = getdirs[Iloc][0]
 
@@ -123,8 +123,8 @@ def _package_name(packagename, verbose=3):
     return(packagename)
 
 
-# %% def main(githubname, packagename=None, verbose=3):
-def main(githubname, packagename, makeclean=False, twine=None, verbose=3):
+# %% def main(username, packagename=None, verbose=3):
+def main(username, packagename, makeclean=False, twine=None, verbose=3):
     """Make new release on github and pypi.
 
     Description
@@ -142,7 +142,7 @@ def main(githubname, packagename, makeclean=False, twine=None, verbose=3):
 
     Parameters
     ----------
-    githubname : str
+    username : str
         Name of the github account.
     packagename : str
         Name of the package.
@@ -164,16 +164,17 @@ def main(githubname, packagename, makeclean=False, twine=None, verbose=3):
     * https://blog.ionelmc.ro/presentations/packaging/#slide:8
 
     """
-
     # Get package name
     packagename = _package_name(packagename, verbose=verbose)
     assert packagename is not None, print('[release] ERROR: Package directory does not exists.')
+    assert username is not None, print('[release] ERROR: Github name does not exists.')
+
     # Get init file from the dir of interest
     initfile = os.path.join(packagename, "__init__.py")
 
     if verbose>=3:
         os.system('cls')
-        print('[release] github    : %s' %githubname)
+        print('[release] username  : %s' %username)
         print('[release] Package   : %s' %packagename)
         print('[release] Cleaning  : %s' %makeclean)
         print('[release] Verbosity : %s' %verbose)
@@ -191,7 +192,7 @@ def main(githubname, packagename, makeclean=False, twine=None, verbose=3):
             # Version found, lets move on:
             current_version = getversion.group(1)
             # Get latest version of github release
-            githubversion = github_version(githubname, packagename, verbose=verbose)
+            githubversion = github_version(username, packagename, verbose=verbose)
             if verbose>=3: print('[release] Current local version from __init__.py: %s and from github: %s' %(current_version, githubversion))
 
             # Continue with the process of building a new version if the current version is newer then the one on github.
@@ -199,7 +200,7 @@ def main(githubname, packagename, makeclean=False, twine=None, verbose=3):
                 if verbose>=3: print("[release] Very first release for [%s]" %(packagename))
                 VERSION_OK = True
             elif githubversion=='9.9.9':
-                if verbose>=3: print("[release] %s/%s not available for [%s]" %(githubname, packagename))
+                if verbose>=3: print("[release] %s/%s not available for [%s]" %(username, packagename))
                 VERSION_OK = False
             elif version.parse(current_version)>version.parse(githubversion):
                 VERSION_OK = True
@@ -222,20 +223,62 @@ def main(githubname, packagename, makeclean=False, twine=None, verbose=3):
 
             else:
                 if githubversion != '9.9.9':
-                    print('[release] WARNING: Not released! You need to increase your version or make an active repo: [%s]' %(initfile))
+                    if verbose>=2: print('[release] WARNING: Not released! You need to increase your version or make an active repo: [%s]' %(initfile))
 
         else:
-            print("[release] ERROR: Unable to find version string in %s. Make sure that the operators are space seperated eg.: __version__ = '0.1.0'" % (initfile,))
+            if verbose>=1: print("[release] ERROR: Unable to find version string in %s. Make sure that the operators are space seperated eg.: __version__ = '0.1.0'" % (initfile,))
     else:
-        print('[release] __init__.py File not found: %s' %(initfile))
+        if verbose>=2: print('[release] Warning: __init__.py File not found: %s' %(initfile))
+
+
+# %% Extract github username from config file
+def _github_username(verbose=3):
+    username=None
+    if verbose>=4: print('[release.debug] Extracting github name from .git folder')
+    # Open github config file
+    f = open('./.git/config')
+    gitconfig = f.readlines()
+    # Iterate over the lines and search for git@github.com
+    for line in gitconfig:
+        line = line.replace('\t','')
+        geturl = re.search('git@github.com', line)
+        # If git@github.com detected: exract the username
+        if geturl:
+            username_line = line[geturl.end() + 1:(geturl.end() + 20)]
+            next_char = re.search('/',username_line)
+            username = username_line[:next_char.start()].replace('"','')
+
+    return username
+
+
+# %% Extract github username from config file
+def _github_package(verbose=3):
+    package = None
+    if verbose>=4: print('[release.debug] Extracting package name from .git folder')
+    # Open github config file
+    f = open('./.git/config')
+    gitconfig = f.readlines()
+    # Iterate over the lines and search for git@github.com
+    for line in gitconfig:
+        line = line.replace('\t','')
+        geturl = re.search('git@github.com', line)
+        # If git@github.com detected: exract the package
+        if geturl:
+            repo_line = line[geturl.end():]
+            start_pos = re.search('/',repo_line)
+            stop_pos = re.search('.git',repo_line)
+            package = repo_line[start_pos.end():stop_pos.start()].replace('"','')
+
+    return package
 
 
 # %% Main function
 if __name__ == '__main__':
     # main
     parser = argparse.ArgumentParser()
-    parser.add_argument("github", type=str, help="github account name")
-    parser.add_argument("-p", "--package", type=str, help="Package name your want to release.")
+    # parser.add_argument("github", type=str, help="github account name")
+    parser.add_argument("-u", "--username", type=str, help="username github.")
+    parser.add_argument("-p", "--package", type=str, help="Dir of the package to be released.")
     parser.add_argument("-c", "--clean", type=int, choices=[0, 1], help="Remove local builds: [dist], [build] and [x.egg-info] before creating new ones.")
     parser.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2, 3, 4, 5], help="Output verbosity, higher number tends to more information.")
     parser.add_argument("-t", "--twine", type=str, help="Path to twine that is used to upload to pypi.")
@@ -244,14 +287,23 @@ if __name__ == '__main__':
     # Default verbosity value is 0
     if args.verbosity is None:
         args.verbosity=3
+
     if args.clean is None or args.clean==1:
         args.clean=True
     else:
         args.clean=False
+
     if args.twine is None:
         args.twine = ''
         if platform.system().lower()=='windows':
             args.twine = os.environ['TWIN.EXE']
             # TWINE_PATH = 'C://Users/<USER>/AppData/Roaming/Python/Python36/Scripts/twine.exe'
 
-    main(args.github, args.package, makeclean=args.clean, twine=args.twine, verbose=args.verbosity)
+    if args.username is None:
+        args.username = _github_username(verbose=args.verbosity)
+
+    if args.package is None:
+        args.package = _github_package(verbose=args.verbosity)
+
+    # Go to main
+    main(args.username, args.package, makeclean=args.clean, twine=args.twine, verbose=args.verbosity)
